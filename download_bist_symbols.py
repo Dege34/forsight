@@ -1,11 +1,10 @@
 import pandas as pd
 
-# Güncel Borsa İstanbul hisseleri (günlük güncelleniyor)
 url = "https://stockanalysis.com/list/borsa-istanbul/"
 
 print(f"Sayfa indiriliyor: {url}")
 
-# Sayfadaki tüm tabloları çek
+
 tables = pd.read_html(url)
 
 if not tables:
@@ -13,7 +12,6 @@ if not tables:
 
 df_symbols = None
 
-# İçinde 'Symbol' kolonu olan tabloyu bul
 for t in tables:
     cols = [str(c).strip() for c in t.columns]
     if "Symbol" in cols:
@@ -26,7 +24,6 @@ if df_symbols is None:
         print(f"Tablo {i}: {list(t.columns)}")
     raise SystemExit("Symbol kolonu olmadığı için işlem durduruldu.")
 
-# Sembol listesini temizle
 symbols = (
     df_symbols["Symbol"]
     .dropna()
@@ -38,8 +35,7 @@ symbols = (
 
 print(f"Toplam {len(symbols)} adet sembol bulundu.")
 
-# Çıktı dosyasının yolu
-output_path = r"C:\Users\OMEN\Desktop\isyatirimhisse\bist_symbols.txt"
+output_path = r"C:\Users\OMEN\Desktop\forsight\bist_symbols.txt"
 
 with open(output_path, "w", encoding="utf-8") as f:
     for sym in symbols:

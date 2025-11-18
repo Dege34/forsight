@@ -4,15 +4,8 @@ import os
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-# ==========================
-# 1) Kullanıcıdan sembol al
-# ==========================
 symbol = input("Hisse sembolü (örn: THYAO): ").strip().upper()
 
-# ==========================
-# 2) Tarih aralıklarını tanımla
-#    03-01-1986'dan bugüne kadar
-# ==========================
 date_ranges = [
     ("03-01-1986", "31-12-1999"),
     ("01-01-2000", "31-12-2009"),
@@ -42,27 +35,17 @@ if not all_data:
     print("Hiçbir aralıktan veri gelemedi. Muhtemelen site bağlantıyı kesiyor veya IP engellenmiş.")
     raise SystemExit
 
-# ==========================
-# 3) Tüm veriyi birleştir
-# ==========================
 df = pd.concat(all_data, ignore_index=True)
 
 df["HGDG_TARIH"] = pd.to_datetime(df["HGDG_TARIH"])
 df = df.sort_values("HGDG_TARIH")
 
-# Aynı günü tekrarlayan satırlar varsa sonuncuyu bırak
 df = df.drop_duplicates(subset=["HGDG_TARIH"], keep="last")
 
-# ==========================
-# 4) Klasör yapısı (analysis / <SEMBOL>)
-# ==========================
-base_folder = r"C:\Users\OMEN\Desktop\isyatirimhisse\analysis"
+base_folder = r"C:\Users\OMEN\Desktop\forsight\analysis"
 symbol_folder = os.path.join(base_folder, symbol)  # örn: ...\analysis\THYAO
 os.makedirs(symbol_folder, exist_ok=True)
 
-# ==========================
-# 5) Excel'e kaydet
-# ==========================
 file_name = f"analysis_{symbol}.xlsx"
 file_path = os.path.join(symbol_folder, file_name)
 
@@ -77,11 +60,7 @@ except PermissionError:
     print(f"\n[UYARI] {file_path} dosyasına yazılamadı (muhtemelen Excel'de açık).")
     print(f"[OK] Veri yeni dosyaya kaydedildi: {alt_file_path}")
 
-# ==========================
-# 6) Terminalde tablo gibi, hisse adıyla birlikte göster
-# ==========================
 
-# Kullanmak istediğimiz kolonlar ve yeni isimleri
 kolon_harita = {
     "HGDG_TARIH": "Tarih",
     "HGDG_KAPANIS": "Kapanis",
@@ -91,15 +70,12 @@ kolon_harita = {
     "HG_HACIM": "Hacim_TL"
 }
 
-# Sadece mevcut olan kolonları al
 mevcut_harita = {k: v for k, v in kolon_harita.items() if k in df.columns}
 ozet_df = df[list(mevcut_harita.keys())].rename(columns=mevcut_harita)
 
-# Tarihi düzgün formatla
 if "Tarih" in ozet_df.columns:
     ozet_df["Tarih"] = pd.to_datetime(ozet_df["Tarih"]).dt.strftime("%Y-%m-%d")
 
-# En başa Sembol kolonu ekle
 ozet_df.insert(0, "Sembol", symbol)
 
 ilk_tarih = df["HGDG_TARIH"].min().date()
@@ -110,22 +86,19 @@ print(f"{symbol} - TÜM VERİ (03-01-1986'dan bugüne)")
 print(f"Toplam satır: {len(df)} | İlk tarih: {ilk_tarih} | Son tarih: {son_tarih}")
 print("=" * 80 + "\n")
 
-# Pandas görüntü ayarları – TÜM satırları göster, tabloyu daha derli toplu yap
-pd.set_option("display.max_rows", None)       # tüm satırlar
-pd.set_option("display.max_columns", None)    # tüm kolonlar
-pd.set_option("display.width", 200)           # satırlar çok bölünmesin
+pd.set_option("display.max_rows", None)       
+pd.set_option("display.max_columns", None)    
+pd.set_option("display.width", 200)          
 pd.set_option("display.colheader_justify", "center")
 
-# Tüm tabloyu yazdır (index yok, tamamen tablo gibi)
+
 print(ozet_df.to_string(index=False))
 
 print("\n" + "=" * 80)
 print("(Daha fazla kolon/detay için Excel dosyasına bakabilirsin.)")
 print("=" * 80 + "\n")
 
-# ==========================
-# 7) Grafik (kapanış fiyatı) + PNG + SVG + CSV
-# ==========================
+
 if "HGDG_KAPANIS" in df.columns:
     plt.figure()
     plt.plot(df["HGDG_TARIH"], df["HGDG_KAPANIS"])
@@ -134,20 +107,17 @@ if "HGDG_KAPANIS" in df.columns:
     plt.title(f"{symbol} - 03-01-1986'dan bugüne kapanış fiyatı")
     plt.tight_layout()
 
-    # ---- Grafik dosyaları ----
     graph_file_name_png = f"{symbol}_graph.png"
     graph_file_name_svg = f"{symbol}_graph.svg"
     graph_path_png = os.path.join(symbol_folder, graph_file_name_png)
     graph_path_svg = os.path.join(symbol_folder, graph_file_name_svg)
 
-    # PNG ve SVG olarak kaydet
     plt.savefig(graph_path_png)
     plt.savefig(graph_path_svg)
 
     print(f"[OK] Grafik PNG kaydedildi: {graph_path_png}")
     print(f"[OK] Grafik SVG kaydedildi: {graph_path_svg}")
 
-    # ---- Grafik verisini (tarih + kapanış) CSV olarak kaydet ----
     df_plot = pd.DataFrame({
         "Tarih": df["HGDG_TARIH"].dt.strftime("%Y-%m-%d"),
         "Kapanis": df["HGDG_KAPANIS"]
@@ -159,7 +129,6 @@ if "HGDG_KAPANIS" in df.columns:
 
     print(f"[OK] Grafik verisi CSV olarak kaydedildi: {csv_path}")
 
-    # Grafiği ekranda göster
     plt.show()
 
 print("\n--- BİTTİ ---")

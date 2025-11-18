@@ -6,28 +6,20 @@ from datetime import datetime
 import pandas as pd
 from isyatirimhisse import fetch_stock_data
 
-# ==========================
-# AYARLAR
-# ==========================
-
-# TEST MODU:
-# - True  -> önce birkaç sembolle deneme
-# - False -> tüm listeyi kullan
 USE_TEST_MODE = True
 
-# Sembol listesi dosyaları
-SYMBOLS_FILE_ALL = r"C:\Users\OMEN\Desktop\isyatirimhisse\bist_symbols.txt"
-SYMBOLS_FILE_TEST = r"C:\Users\OMEN\Desktop\isyatirimhisse\bist_symbols_test.txt"
+
+SYMBOLS_FILE_ALL = r"C:\Users\OMEN\Desktop\forsight\bist_symbols.txt"
+SYMBOLS_FILE_TEST = r"C:\Users\OMEN\Desktop\forsight\bist_symbols_test.txt"
 
 SYMBOLS_FILE = SYMBOLS_FILE_TEST if USE_TEST_MODE else SYMBOLS_FILE_ALL
 
-# Veritabanının kaydedileceği yer
-DB_FOLDER = r"C:\Users\OMEN\Desktop\isyatirimhisse\analysis"
+
+DB_FOLDER = r"C:\Users\OMEN\Desktop\forsight\analysis"
 os.makedirs(DB_FOLDER, exist_ok=True)
 
 DB_PATH = os.path.join(DB_FOLDER, "bist_prices.db")
 
-# 1986'dan bugüne parçalı tarih aralıkları
 DATE_RANGES = [
     ("03-01-1986", "31-12-1999"),
     ("01-01-2000", "31-12-2009"),
@@ -35,14 +27,7 @@ DATE_RANGES = [
     ("01-01-2020", datetime.today().strftime("%d-%m-%Y")),
 ]
 
-# İstekler arasına koyacağımız bekleme (saniye)
-# ÖNERİ UYGULANDI: 5 saniye
 REQUEST_SLEEP = 5
-
-
-# ==========================
-# 1) Sembolleri oku
-# ==========================
 
 if not os.path.exists(SYMBOLS_FILE):
     raise FileNotFoundError(f"Sembol dosyası bulunamadı: {SYMBOLS_FILE}")
@@ -57,14 +42,9 @@ if not symbols:
     raise SystemExit("Sembol listesi boş. Sembol dosyasını kontrol et.")
 
 
-# ==========================
-# 2) SQLite veritabanını hazırla
-# ==========================
-
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
-# prices tablosu (varsa elleme, yoksa oluştur)
 cursor.execute(
     """
     CREATE TABLE IF NOT EXISTS prices (
@@ -82,10 +62,6 @@ conn.commit()
 
 print(f"Veritabanı hazır: {DB_PATH}")
 
-
-# ==========================
-# 3) Yardımcı fonksiyonlar
-# ==========================
 
 def fetch_full_history(symbol: str) -> pd.DataFrame | None:
     """Verilen sembol için 1986'dan bugüne kadar tüm veriyi parça parça çeker."""
@@ -109,7 +85,6 @@ def fetch_full_history(symbol: str) -> pd.DataFrame | None:
         else:
             parts.append(df_part)
 
-        # ÖNERİ UYGULANDI: istekler arası bekleme
         time.sleep(REQUEST_SLEEP)
 
     if not parts:
@@ -118,7 +93,6 @@ def fetch_full_history(symbol: str) -> pd.DataFrame | None:
 
     df_all = pd.concat(parts, ignore_index=True)
 
-    # Tarihe göre sırala ve aynı günü tekrarlayanları temizle
     df_all["HGDG_TARIH"] = pd.to_datetime(df_all["HGDG_TARIH"])
     df_all = df_all.sort_values("HGDG_TARIH")
     df_all = df_all.drop_duplicates(subset=["HGDG_TARIH"], keep="last")
@@ -128,7 +102,6 @@ def fetch_full_history(symbol: str) -> pd.DataFrame | None:
 
 def save_to_db(symbol: str, df: pd.DataFrame, conn: sqlite3.Connection):
     """DataFrame'i prices tablosuna yazar."""
-    # DB'ye yazmak için sade kolonlar
     rename_map = {
         "HGDG_TARIH": "date",
         "HGDG_KAPANIS": "close",
@@ -137,33 +110,29 @@ def save_to_db(symbol: str, df: pd.DataFrame, conn: sqlite3.Connection):
         "HG_HACIM": "volume",
     }
 
-    # Sadece olan kolonları al
+
     cols = [c for c in rename_map.keys() if c in df.columns]
     df_db = df[cols].rename(columns=rename_map)
 
-    # Tarihi string (YYYY-MM-DD) yap
+
     df_db["date"] = pd.to_datetime(df_db["date"]).dt.strftime("%Y-%m-%d")
 
-    # Sembol kolonu ekle
+
     df_db["symbol"] = symbol
 
-    # Kolon sırasını sabitle
+
     df_db = df_db[["symbol", "date", "close", "low", "high", "volume"]]
 
-    # SQLite'a yaz (append)
+
     df_db.to_sql("prices", conn, if_exists="append", index=False)
 
 
-# ==========================
-# 4) Asıl döngü
-# ==========================
 
 for idx, symbol in enumerate(symbols, start=1):
     print("\n" + "=" * 80)
     print(f"[{idx}/{len(symbols)}] Sembol işleniyor: {symbol}")
     print("=" * 80)
 
-    # Bu sembol daha önce DB'ye yazılmış mı kontrol et
     cursor.execute(
         "SELECT COUNT(*) FROM prices WHERE symbol = ?",
         (symbol,),
