@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 Dogan Ege BULTE
+# 
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+# -----------------------------------------------------------------------------
+
 import pandas as pd
 
 url = "https://stockanalysis.com/list/borsa-istanbul/"

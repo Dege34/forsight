@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 Dogan Ege BULTE
+# 
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+# -----------------------------------------------------------------------------
+
 import sqlite3
 import pandas as pd
 
