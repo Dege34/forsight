@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 Dogan Ege BULTE
+# 
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+# -----------------------------------------------------------------------------
+
 import time
 from datetime import date
 
@@ -6,14 +13,12 @@ import yfinance as yf
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 
-# ================== AYARLAR ==================
 SYMBOL_FILE = "bist_symbols.txt"
 DB_URL = "sqlite:///bist_valuation_measures.db"
 TABLE_NAME = "valuation_measures"
 
-SLEEP_SECONDS = 1.0   # semboller arası bekleme (rate limit için)
+SLEEP_SECONDS = 1.0   
 
-# Yahoo info içindeki alanlar -> bizim kolon isimleri
 VALUATION_FIELDS = {
     "marketCap": "market_cap",
     "enterpriseValue": "enterprise_value",
@@ -33,7 +38,6 @@ def load_symbols(path: str) -> list[str]:
 
 
 def to_yahoo_symbol(raw: str) -> str:
-    # Zaten .IS vb. uzantı varsa dokunma
     if "." in raw:
         return raw
     return raw + ".IS"
@@ -46,7 +50,6 @@ def fetch_current_valuations(raw_symbol: str) -> dict | None:
     tkr = yf.Ticker(yahoo_symbol)
 
     try:
-        # Yeni yfinance sürümlerinde get_info() öneriliyor
         info = tkr.get_info()
     except Exception as e:
         print(f"[HATA] {raw_symbol} için get_info() başarısız: {e}")
@@ -59,9 +62,7 @@ def fetch_current_valuations(raw_symbol: str) -> dict | None:
     row = {
         "symbol": raw_symbol,
         "yahoo_symbol": yahoo_symbol,
-        # Bu kaydı hangi gün çektiğimiz
         "as_of_date": date.today().isoformat(),
-        # Valuation Measures tablosundaki 'Current' sütunu gibi düşünebilirsin
         "period": "Current",
     }
 
@@ -96,7 +97,6 @@ def main():
     engine = create_engine(DB_URL)
 
     try:
-        # if_exists='append' -> her çalıştırmada yeni tarihli satırlar eklenir
         with engine.begin() as conn:
             df.to_sql(TABLE_NAME, con=conn, if_exists="append", index=False)
         print(f"\n'{TABLE_NAME}' tablosuna {len(df)} satır yazıldı.")

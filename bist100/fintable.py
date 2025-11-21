@@ -1,3 +1,12 @@
+#NOT COMPLETED
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 Dogan Ege BULTE
+# 
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+# -----------------------------------------------------------------------------
+
 import time
 from datetime import date
 import re
@@ -7,14 +16,13 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 
-# ================== AYARLAR ==================
 BASE_URL = "https://fintables.com/sirketler/{symbol}/finansal-tablolar/bilanco"
-SYMBOL_FILE = "bist_symbols.txt"          # Çoklu sembol için
+SYMBOL_FILE = "bist_symbols.txt"      
 DB_URL = "sqlite:///fintables_bilancolar.db"
 TABLE_NAME = "bilanco_kalemleri"
 
-MIN_YEAR = 2016          # 2016'dan itibaren
-SLEEP_SECONDS = 1.5      # isteklere ara (rate limit için)
+MIN_YEAR = 2016      
+SLEEP_SECONDS = 1.5   
 
 HEADERS = {
     "User-Agent": (
@@ -34,7 +42,6 @@ def load_symbols(path: str) -> list[str]:
         with open(path, "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
-        # Dosya yoksa tek sembolle manuel çalıştırırsın
         return []
 
 
@@ -56,7 +63,7 @@ def pick_balance_dataframe(html: str) -> pd.DataFrame | None:
     dönemsellik olan tabloyu seçmeye çalışır.
     """
     try:
-        tables = pd.read_html(html)  # lxml / html5lib kullanır
+        tables = pd.read_html(html) 
     except ValueError:
         print("  -> HTML içinde tablo bulunamadı.")
         return None
@@ -65,15 +72,13 @@ def pick_balance_dataframe(html: str) -> pd.DataFrame | None:
         print("  -> read_html tablo döndürmedi.")
         return None
 
-    year_pattern = re.compile(r"^\d{4}/\d{1,2}$")  # 2024/12, 2017/3 vs.
+    year_pattern = re.compile(r"^\d{4}/\d{1,2}$")
 
     for idx, df in enumerate(tables):
-        # En azından 2+ kolon varsa deneyelim
         if df.shape[1] < 2:
             continue
 
         cols = df.columns
-        # ilk kolonu 'kalem' sayıp geriye kalan kolonları dönem başlıkları varsayıyoruz
         periods = cols[1:]
 
         has_period = False
@@ -97,11 +102,9 @@ def tidy_balance_df(symbol: str, raw_df: pd.DataFrame) -> pd.DataFrame:
     """
     df = raw_df.copy()
 
-    # İlk kolon kalem adı olsun
     first_col = df.columns[0]
     df = df.rename(columns={first_col: "kalem"})
 
-    # 2016'dan itibaren olan dönem kolonlarını seç
     keep_cols = ["kalem"]
     for col in df.columns[1:]:
         year = None
@@ -112,18 +115,15 @@ def tidy_balance_df(symbol: str, raw_df: pd.DataFrame) -> pd.DataFrame:
 
     df = df[keep_cols]
 
-    # Uzun formata çevir
     long_df = df.melt(
         id_vars=["kalem"],
         var_name="period",
         value_name="value",
     )
 
-    # sembol ve çekilme tarihi ekle
     long_df["symbol"] = symbol
     long_df["as_of_date"] = date.today().isoformat()
 
-    # NaN / boş değerleri at
     long_df = long_df.dropna(subset=["value"])
 
     return long_df
@@ -147,8 +147,6 @@ def fetch_balance_for_symbol(symbol: str) -> pd.DataFrame | None:
 def main():
     symbols = load_symbols(SYMBOL_FILE)
     if not symbols:
-        # Dosya yoksa tek sembolle denemek istersen burayı doldur:
-        # örn: symbols = ["HALKB"]
         print("bist_symbols.txt bulunamadı veya boş. Örneğin HALKB ile denemek istersen kodda main() içini düzenle.")
         return
 
@@ -175,7 +173,6 @@ def main():
 
     try:
         with engine.begin() as conn:
-            # Üstüne ekleyerek tarihsel log tut
             result.to_sql(TABLE_NAME, con=conn, if_exists="append", index=False)
         print(f"\n'{TABLE_NAME}' tablosuna {len(result)} satır yazıldı.")
         print("Veritabanı:", DB_URL)
