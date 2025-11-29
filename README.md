@@ -6,7 +6,6 @@ ForSight is a state-of-the-art financial analysis tool designed specifically for
 
 <img width="1882" height="898" alt="Ekran görüntüsü 2025-11-29 032411" src="https://github.com/Dege34/forsight/blob/main/asset/header1.png" />
 
-*(Replace this link with your actual screenshot)*
 
 ## 🚀 Key Features
 
