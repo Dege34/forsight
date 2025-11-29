@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 Dogan Ege BULTE
+# 
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+# -----------------------------------------------------------------------------
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3
@@ -23,7 +30,6 @@ CORS(app)
 
 DB_PATH = "bist_model_ready.db"
 
-# Actual column names from database
 ACTUAL_COLUMNS = [
     'symbol', 'date', 'close', 'weighted_average_try', 'low', 'high', 'volume_try',
     'bist', 'usd_kur_price', 'close_usd', 'relative_to_index', 'volume_usd',
@@ -49,7 +55,6 @@ def train_and_predict_model(symbol, days_ahead=30):
     """Train multiple ML models and return the best prediction"""
     conn = get_db_connection()
     
-    # Build query with properly quoted column names
     columns_str = ', '.join([safe_column_name(col) for col in ACTUAL_COLUMNS])
     query = f"""
     SELECT {columns_str}
@@ -71,7 +76,6 @@ def train_and_predict_model(symbol, days_ahead=30):
     
     df['date'] = pd.to_datetime(df['date'])
     
-    # Feature engineering
     df['returns'] = df['close'].pct_change()
     df['log_returns'] = np.log(df['close'] / df['close'].shift(1))
     df['volatility_20'] = df['returns'].rolling(window=20).std()
@@ -79,20 +83,16 @@ def train_and_predict_model(symbol, days_ahead=30):
     df['momentum_10'] = df['close'] - df['close'].shift(10)
     df['momentum_20'] = df['close'] - df['close'].shift(20)
     
-    # Target: Future price
     df['target'] = df['close'].shift(-days_ahead)
     
-    # Drop rows with NaN
     df = df.dropna()
     
     if len(df) < 100:
         return None
     
-    # Select numeric features
     feature_cols = [col for col in df.columns if col not in ['symbol', 'date', 'target']]
     feature_cols = [col for col in feature_cols if df[col].dtype in ['float64', 'int64']]
     
-    # Remove columns with too many NaN or zero variance
     valid_features = []
     for col in feature_cols:
         if df[col].notna().sum() > len(df) * 0.5 and df[col].std() > 0:
@@ -104,22 +104,18 @@ def train_and_predict_model(symbol, days_ahead=30):
     X = df[valid_features].fillna(0)
     y = df['target']
     
-    # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
     
-    # Standardize
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Train models
     models = {
         'Random Forest': RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1),
         'Gradient Boosting': GradientBoostingRegressor(n_estimators=100, max_depth=5, random_state=42),
         'Linear Regression': LinearRegression()
     }
     
-    # Add XGBoost if available
     if XGBOOST_AVAILABLE:
         models['XGBoost'] = XGBRegressor(n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42, n_jobs=-1)
     
@@ -158,7 +154,6 @@ def train_and_predict_model(symbol, days_ahead=30):
     if best_model is None:
         return None
     
-    # Make prediction
     last_features = X.iloc[-1:].values
     last_features_scaled = scaler.transform(last_features)
     future_prediction = best_model.predict(last_features_scaled)[0]
@@ -166,14 +161,12 @@ def train_and_predict_model(symbol, days_ahead=30):
     current_price = float(df['close'].iloc[-1])
     predicted_change = ((future_prediction - current_price) / current_price) * 100
     
-    # Feature importance
     feature_importance = {}
     if hasattr(best_model, 'feature_importances_'):
         importances = best_model.feature_importances_
         indices = np.argsort(importances)[::-1][:10]
         feature_importance = {valid_features[i]: float(importances[i]) for i in indices}
     
-    # Correlations
     correlations = df[valid_features + ['target']].corr()['target'].drop('target')
     top_correlations = correlations.abs().sort_values(ascending=False)[:10]
     
@@ -216,7 +209,6 @@ def get_symbol_data(symbol):
     
     conn = get_db_connection()
     
-    # Build query with properly quoted column names
     columns_str = ', '.join([safe_column_name(col) for col in ACTUAL_COLUMNS])
     query = f"""
     SELECT {columns_str}
@@ -237,7 +229,6 @@ def get_symbol_data(symbol):
     
     df['date'] = pd.to_datetime(df['date'])
     
-    # Calculate metrics
     df['returns'] = df['close'].pct_change()
     df['cumulative_returns'] = (1 + df['returns']).cumprod() - 1
     df['ma_20'] = df['close'].rolling(window=20).mean()
@@ -250,11 +241,9 @@ def get_symbol_data(symbol):
     df.loc[df['ma_20'] > df['ma_50'], 'signal'] = 1
     df.loc[df['ma_20'] < df['ma_50'], 'signal'] = -1
     
-    # Add open if not exists
     if 'open' not in df.columns:
         df['open'] = df['close']
     
-    # Statistics
     stats_data = {
         'total_records': len(df),
         'date_range': {
@@ -276,7 +265,6 @@ def get_symbol_data(symbol):
         }
     }
     
-    # Get prediction
     print(f"Training AI model for {symbol}...")
     prediction = train_and_predict_model(symbol)
     
@@ -320,7 +308,6 @@ def get_time_range_data(symbol):
     
     conn = get_db_connection()
     
-    # Simple query for time range
     query = """
     SELECT symbol, date, close, low, high, volume
     FROM model_data 
@@ -340,7 +327,6 @@ def get_time_range_data(symbol):
     
     df['date'] = pd.to_datetime(df['date'])
     
-    # Add open if not exists
     if 'open' not in df.columns:
         df['open'] = df['close']
     
@@ -398,7 +384,6 @@ def compare_symbols():
     
     conn.close()
     
-    # Correlation matrix
     correlation_matrix = {}
     if len(comparison_data) >= 2:
         returns_df = pd.DataFrame({symbol: data['returns'] for symbol, data in comparison_data.items()})
