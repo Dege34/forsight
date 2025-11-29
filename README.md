@@ -4,7 +4,8 @@
 
 ForSight is a state-of-the-art financial analysis tool designed specifically for the Borsa Istanbul (BIST) market. Leveraging advanced machine learning models and a vast database spanning over 28 years (1997-2025), ForSight provides investors with data-driven insights, price predictions, and comprehensive technical analysis.
 
-![Landing Page](https://via.placeholder.com/800x400?text=ForSight+Dashboard)
+<img width="1882" height="898" alt="Ekran görüntüsü 2025-11-29 032411" src="https://github.com/Dege34/forsight/blob/main/asset/header1.png" />
+
 *(Replace this link with your actual screenshot)*
 
 ## 🚀 Key Features
