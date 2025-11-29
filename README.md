@@ -74,11 +74,11 @@ npm run dev
 
 | Landing Page | AI Predictions |
 |:---:|:---:|
-| ![Landing](https://via.placeholder.com/400x200?text=Landing+Page) | ![Predictions](https://via.placeholder.com/400x200?text=AI+Predictions) |
+| <img width="1882" height="898" alt="Ekran görüntüsü 2025-11-29 032411" src="https://github.com/Dege34/forsight/blob/main/asset/header3.png" /> |
 
 | Symbol Search | Technical Charts |
 |:---:|:---:|
-| ![Search](https://via.placeholder.com/400x200?text=Symbol+Search) | ![Charts](https://via.placeholder.com/400x200?text=Technical+Charts) |
+| <img width="1882" height="898" alt="Ekran görüntüsü 2025-11-29 032411" src="https://github.com/Dege34/forsight/blob/main/asset/header4.png" /> |
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/Dege34/ForSight/issues).
